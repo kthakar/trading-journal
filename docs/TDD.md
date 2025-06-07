@@ -755,4 +755,94 @@ class UpdateProfileResponse(UserProfile):
 - Audit logging
 - Performance logging
 - Brokerage sync logging
-- Supabase logs 
+- Supabase logs
+
+## 9. Trade Pipeline
+
+### Overview
+This section outlines how raw brokerage fills are transformed into trades.
+
+### Entities
+- **Fill**: A single execution from the brokerage API. Each fill records the symbol, side (buy/sell), quantity, price, timestamp and account.
+- **Trade**: An aggregate of one or more fills. A trade moves through `OPEN`, `PARTIALLY_CLOSED` and `CLOSED` states.
+
+### High Level Flow
+1. Brokerage sync fetches fills from the external API.
+2. Fills are stored verbatim in the `fills` table.
+3. A background worker processes fills in time order per account and symbol.
+4. Trades are created or updated based on the algorithm below.
+
+### Trade Generation Algorithm
+```python
+for fill in fills_ordered_by_time(account, symbol):
+    qty = fill.quantity if fill.side == "BUY" else -fill.quantity
+    trade = find_latest_open_trade(account, symbol)
+
+    if trade is None:
+        trade = Trade(
+            account_id=account,
+            symbol=fill.symbol,
+            direction="LONG" if qty > 0 else "SHORT",
+            entry_date=fill.timestamp,
+            entry_price=fill.price,
+            open_qty=qty,
+            state="OPEN",
+        )
+        save(trade)
+    else:
+        new_qty = trade.open_qty + qty
+        if (trade.direction == "LONG" and qty > 0) or (trade.direction == "SHORT" and qty < 0):
+            trade.entry_price = weighted_avg(trade.entry_price, trade.open_qty, fill.price, qty)
+            trade.open_qty = new_qty
+        else:
+            trade.exit_price = weighted_avg(trade.exit_price, trade.closed_qty, fill.price, abs(qty))
+            trade.closed_qty += abs(qty)
+            trade.open_qty = max(0, trade.open_qty - abs(qty))
+
+        if trade.open_qty == 0:
+            trade.state = "CLOSED"
+            trade.exit_date = fill.timestamp
+        elif trade.closed_qty > 0:
+            trade.state = "PARTIALLY_CLOSED"
+
+        save(trade)
+
+        if new_qty * trade.open_qty < 0:
+            remaining_fill = qty + trade.open_qty
+            create_trade_from_fill(remaining_fill, fill)
+```
+
+### Notes
+- `open_qty` represents the current position size.
+- `closed_qty` tracks how much of the position has been closed.
+- When `open_qty` reaches zero the trade is `CLOSED`.
+- If a closing fill is larger than the open quantity, the excess becomes a new trade in the fill's direction.
+
+### Database Tables (simplified)
+```sql
+CREATE TABLE fills (
+    id UUID PRIMARY KEY,
+    account_id UUID NOT NULL,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,   -- BUY or SELL
+    quantity NUMERIC(10,2) NOT NULL,
+    price NUMERIC(10,2) NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE TABLE trades (
+    id UUID PRIMARY KEY,
+    account_id UUID NOT NULL,
+    symbol TEXT NOT NULL,
+    direction TEXT NOT NULL,       -- LONG or SHORT
+    entry_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    exit_date TIMESTAMP WITH TIME ZONE,
+    entry_price NUMERIC(10,2) NOT NULL,
+    exit_price NUMERIC(10,2),
+    open_qty NUMERIC(10,2) NOT NULL,
+    closed_qty NUMERIC(10,2) NOT NULL DEFAULT 0,
+    state TEXT NOT NULL,           -- OPEN, PARTIALLY_CLOSED, CLOSED
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+```

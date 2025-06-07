@@ -22,3 +22,6 @@ This repository contains documentation and backend implementation for the Trade 
    ```
 
 The API will be available at `http://localhost:8000`. A health check endpoint is provided at `/health`.
+
+## Additional Documentation
+- [Technical Design Document](docs/TDD.md) – includes the trade pipeline algorithm
