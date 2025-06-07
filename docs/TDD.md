@@ -578,6 +578,28 @@ class UpdateTagRequest(BaseModel):
 ```
 
 
+### 3.6 Profile
+```python
+# GET /api/profile
+class UserProfile(BaseModel):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    display_name: Optional[str]
+    timezone: str
+
+class GetProfileResponse(UserProfile):
+    pass
+
+# PUT /api/profile
+class UpdateProfileRequest(BaseModel):
+    display_name: Optional[str]
+    timezone: Optional[str]
+
+class UpdateProfileResponse(UserProfile):
+    pass
+```
+
 ## 4. Frontend Components
 
 ### 4.1 Pages
