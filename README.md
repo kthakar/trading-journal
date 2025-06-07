@@ -12,6 +12,10 @@ This repository contains documentation and backend implementation for the Trade 
    ```bash
    cp backend/.env.example backend/.env
    ```
+   Set your Tastytrade credentials in `backend/.env` if you plan to use the
+   Tastytrade integration. This requires `TASTY_CLIENT_ID`,
+   `TASTY_CLIENT_SECRET`, and a long-lived `TASTY_REFRESH_TOKEN` obtained using
+   the OAuth2 authorization code flow.
 3. Run the API server:
    ```bash
    uvicorn backend.app.main:app --reload
