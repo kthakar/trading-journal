@@ -455,7 +455,14 @@ Example usage:
 
 ### 3.4 Analytics
 ```python
+# Query parameters shared by all analytics endpoints
+class AnalyticsQueryParams(BaseModel):
+    start_date: Optional[date]
+    end_date: Optional[date]
+    tag_id: Optional[UUID]
+
 # GET /api/analytics/summary
+# Example: GET /api/analytics/summary?start_date=2024-01-01&end_date=2024-03-31&tag_id=<UUID>
 class AnalyticsSummary(BaseModel):
     total_trades: int
     win_rate: float
@@ -465,6 +472,7 @@ class AnalyticsSummary(BaseModel):
     average_holding_time: timedelta
 
 # GET /api/analytics/time-based
+# Example: GET /api/analytics/time-based?start_date=2024-01-01&end_date=2024-03-31&tag_id=<UUID>
 class TimeBasedAnalytics(BaseModel):
     daily: List[DailyAnalytics]
     monthly: List[MonthlyAnalytics]
@@ -492,6 +500,7 @@ class DayOfWeekAnalytics(BaseModel):
     trades: int
 
 # GET /api/analytics/tags
+# Example: GET /api/analytics/tags?start_date=2024-01-01&end_date=2024-03-31
 class TagAnalytics(BaseModel):
     tag_id: UUID
     tag_name: str
@@ -500,6 +509,7 @@ class TagAnalytics(BaseModel):
     total_pnl: Decimal
 
 # GET /api/analytics/export
+# Example: GET /api/analytics/export?start_date=2024-01-01&end_date=2024-03-31&tag_id=<UUID>
 # Returns CSV or JSON based on Accept header
 ```
 
