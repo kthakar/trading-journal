@@ -482,12 +482,14 @@ class TagAnalytics(BaseModel):
 ### 3.5 Journal Entries
 ```python
 # GET /api/journal-entries
-class GetJournalEntriesRequest(BaseModel):
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
-    trade_id: Optional[UUID]
-    tag_id: Optional[UUID]
-    search: Optional[str]
+# Query Params:
+#   ?start_date=ISO8601 datetime
+#   &end_date=ISO8601 datetime
+#   &trade_id=UUID
+#   &tag_id=UUID
+#   &search=string
+#   &page=int
+#   &limit=int
 
 class GetJournalEntriesResponse(BaseModel):
     entries: List[JournalEntry]
@@ -523,10 +525,10 @@ class CalendarEntry(BaseModel):
     has_attachments: bool
 
 # GET /api/journal-entries/search
-class SearchJournalEntriesRequest(BaseModel):
-    query: str
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
+# Query Params:
+#   ?query=string
+#   &start_date=ISO8601 datetime
+#   &end_date=ISO8601 datetime
 ```
 
 ## 4. Frontend Components
