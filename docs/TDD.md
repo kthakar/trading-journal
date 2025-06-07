@@ -406,6 +406,14 @@ class GetPositionsResponse(BaseModel):
 ### 3.3 Trades
 ```python
 # GET /api/trades
+class GetTradesRequest(BaseModel):
+    page: Optional[int] = 1
+    limit: Optional[int] = 50
+    symbol: Optional[str]
+    start_date: Optional[datetime]
+    end_date: Optional[datetime]
+    tag_id: Optional[UUID]
+
 class GetTradesResponse(BaseModel):
     trades: List[Trade]
     total: int
@@ -428,6 +436,22 @@ class CreateTradeRequest(BaseModel):
 # PUT /api/trades/:id
 # DELETE /api/trades/:id
 ```
+
+Example usage:
+
+`GET /api/trades?page=2&limit=5&symbol=AAPL&start_date=2024-01-01&end_date=2024-01-31`
+
+```json
+{
+    "trades": [/* results page 2 of the filtered list */],
+    "total": 12,
+    "page": 2,
+    "limit": 5
+}
+```
+
+`GET /api/trades?tag_id=<uuid>` returns only trades associated with the provided `tag_id`.
+
 
 ### 3.4 Analytics
 ```python
