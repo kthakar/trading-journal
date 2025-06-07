@@ -528,6 +528,31 @@ class SearchJournalEntriesRequest(BaseModel):
     start_date: Optional[datetime]
     end_date: Optional[datetime]
 ```
+### 3.6 Tags
+Tags categorize trades and journal entries. Associations are stored in `trade_tags` and `journal_entry_tags` join tables.
+
+```python
+# GET /api/tags
+class GetTagsResponse(BaseModel):
+    tags: List[Tag]
+
+# POST /api/tags
+class CreateTagRequest(BaseModel):
+    name: str
+
+class TagResponse(BaseModel):
+    id: UUID
+    name: str
+    created_at: datetime
+    updated_at: datetime
+
+# PUT /api/tags/:id
+class UpdateTagRequest(BaseModel):
+    name: str
+
+# DELETE /api/tags/:id
+```
+
 
 ## 4. Frontend Components
 
