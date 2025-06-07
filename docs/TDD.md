@@ -66,7 +66,9 @@ CREATE TABLE public.brokerage_accounts (
     account_id TEXT NOT NULL,
     access_token TEXT,
     refresh_token TEXT,
+    token_type TEXT,
     token_expires_at TIMESTAMP WITH TIME ZONE,
+    scope TEXT[],
     last_sync_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
@@ -392,16 +394,41 @@ class ConnectBrokerageRequest(BaseModel):
     brokerage_type: Literal["SCHWAB", "IBKR", "TASTY"]
     account_id: str
 
+class ConnectBrokerageResponse(BaseModel):
+    auth_url: str
+    state: str
+    code_verifier: Optional[str]  # Only for PKCE flows
+
+# GET /api/brokerage/callback
+class OAuthCallbackRequest(BaseModel):
+    code: str
+    state: str
+    brokerage_type: Literal["SCHWAB", "IBKR", "TASTY"]
+
+# POST /api/brokerage/disconnect
+class DisconnectBrokerageRequest(BaseModel):
+    brokerage_type: Literal["SCHWAB", "IBKR", "TASTY"]
+    account_id: str
+
 # POST /api/brokerage/sync
 class SyncBrokerageRequest(BaseModel):
     account_id: str
     start_date: Optional[datetime]
     end_date: Optional[datetime]
 
+class SyncBrokerageResponse(BaseModel):
+    trades_synced: int
+    last_sync_date: datetime
+
 # GET /api/brokerage/positions
 class GetPositionsResponse(BaseModel):
     positions: List[Position]
 ```
+
+Token management is automatic. Access and refresh tokens along with
+`token_type`, expiration, and granted `scope` are stored for each brokerage
+account. Tokens are refreshed when near expiry and the updated values are
+persisted.
 
 ### 3.3 Trades
 ```python
@@ -588,7 +615,9 @@ class SearchJournalEntriesRequest(BaseModel):
 ### 6.1 Authentication
 - Supabase Auth for authentication
 - JWT token-based authentication
-- Token refresh mechanism
+- Token refresh mechanism — brokerage access tokens are refreshed automatically
+  using the stored refresh token and updated in the `brokerage_accounts` table
+  when new tokens are issued
 - Rate limiting
 - OAuth2 for brokerage integration
 
